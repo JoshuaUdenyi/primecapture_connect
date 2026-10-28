@@ -6,7 +6,7 @@ A private production workspace for PrimeCapture Media. One Next.js application, 
 
 ## Interface
 
-Larger text, a warm peach/orange palette, and a focused workspace for productions, Page access and devices. These previews show labelled local sample data.
+Larger text, dark charcoal surfaces, and a spacious workspace for productions, Page access and devices. The app fills the window without an outer frame. These previews show labelled local sample data.
 
 ![Desktop workspace](docs/ui/desktop.png)
 
