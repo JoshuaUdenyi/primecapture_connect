@@ -29,13 +29,14 @@ describe('server authorization and workflow',()=>{
    expect(payload.error).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
  });
  it('returns 401 for protected routes, and blocks cross-site mutations',async()=>{
-   for(const path of ['me','clients','destinations','dashboard','audit']) expect((await api(path)).status).toBe(401);
+   for(const path of ['me','clients','destinations','dashboard','audit','youtube/connect']) expect((await api(path)).status).toBe(401);
    expect((await api('auth/demo','POST',{},'https://evil.test')).status).toBe(403);
+   expect((await api('youtube/authorize','POST',{invite:'a'.repeat(43)},'https://evil.test')).status).toBe(403);
  });
  it('separates operator and admin roles on every admin endpoint',async()=>{
    await api('auth/demo','POST',{role:'operator'});
    expect((await api('me')).status).toBe(200);
-   for(const path of ['audit','agents/pair-code','meta/business-access-request']) expect((await api(path,path==='audit'?'GET':'POST',{name:'PC'})).status).toBe(403);
+   for(const path of ['audit','agents/pair-code','meta/business-access-request','youtube/connect']) expect((await api(path,path==='audit'?'GET':'POST',{name:'PC'})).status).toBe(403);
  });
  it('creates records, enforces Page identity/client binding, audits and blocks publish',async()=>{
    await api('auth/demo','POST',{});

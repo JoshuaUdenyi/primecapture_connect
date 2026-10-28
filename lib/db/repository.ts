@@ -37,7 +37,7 @@ export async function get<T extends keyof Tables>(table: T, id: string): Promise
 }
 export async function write<T extends keyof Tables>(table: T, row: Tables[T], staff: Staff, action: string): Promise<Tables[T]> {
   if (isDemo()) {
-    if (table === 'destinations' && demo.destinations.some(d => d.external_id === (row as Destination).external_id)) throw new ApiError(409, 'DUPLICATE', 'That Page is already registered.');
+    if (table === 'destinations' && demo.destinations.some(d => d.provider === (row as Destination).provider && d.external_id === (row as Destination).external_id)) throw new ApiError(409, 'DUPLICATE', 'That destination is already registered.');
     (demo[table] as Tables[T][]).unshift(row);
     demo.audit_events.unshift({ id: randomUUID(), actor_user_id: staff.user_id, action, resource_id: row.id, created_at: new Date().toISOString() });
     return row;

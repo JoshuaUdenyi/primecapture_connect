@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, Facebook, Film, Monitor, Plus, Users } from 'lucide-react';
+import { ArrowUpRight, Facebook, Film, Monitor, Users, Youtube, Radio } from 'lucide-react';
 import type { DashboardData, Production } from '@/lib/types';
 import { Badge, Empty, ProductionRow, pageAccessLabel } from './workspace-ui';
 
@@ -8,7 +8,7 @@ type Props = {
   data: DashboardData;
   now: number;
   onOpen: (dialog: 'production' | 'destination' | 'device' | 'guide') => void;
-  onNavigate: (section: 'Productions' | 'Clients & Pages' | 'Devices' | 'Audit log') => void;
+  onNavigate: (section: 'Productions' | 'Clients & channels' | 'Devices' | 'Audit log') => void;
   onSelectProduction: (production: Production) => void;
 };
 
@@ -20,7 +20,7 @@ export function Overview({ data, now, onOpen, onNavigate, onSelectProduction }: 
     <div className="metrics-grid">
       <div className="metric-card orange"><strong>{data.productions.length}</strong><div><Film size={19}/>Productions</div></div>
       <div className="metric-card green"><strong>{data.clients.length}</strong><div><Users size={19}/>Clients</div></div>
-      <div className="metric-card purple"><strong>{data.destinations.length}</strong><div><Facebook size={19}/>Client Pages</div></div>
+      <div className="metric-card purple"><strong>{data.destinations.length}</strong><div><Radio size={19}/>Channels</div></div>
     </div>
 
     <div className="desk-grid">
@@ -30,13 +30,13 @@ export function Overview({ data, now, onOpen, onNavigate, onSelectProduction }: 
       </section>
 
       <section className="card pages-card">
-        <div className="card-head"><h2>Page access</h2><button className="icon-button" aria-label="Add Page reference" onClick={() => onOpen('destination')}><Plus size={19}/></button></div>
+        <div className="card-head"><h2>Channel access</h2><button className="icon-button" aria-label="Manage channels" onClick={() => onNavigate('Clients & channels')}><ArrowUpRight size={19}/></button></div>
         {data.destinations.length ? data.destinations.slice(0, 3).map(page => {
           const ready = page.connection_status === 'publish_ready' && page.publish_capable;
           const label = pageAccessLabel(page);
-          return <div className="destination-row" key={page.id}><span className="facebook-icon"><Facebook size={20}/></span><div className="row-main"><strong>{page.display_name}</strong><small>Page ID {page.external_id}</small><Badge tone={ready ? 'green' : ['revoked', 'expired'].includes(page.connection_status) ? 'neutral' : 'amber'}>{label}</Badge></div></div>;
-        }) : <Empty icon={<Facebook/>} title="No Pages added" text="Add a client’s Page to track its access."/>}
-        {data.destinations.length > 3 && <button className="card-link" onClick={() => onNavigate('Clients & Pages')}>View all Pages <ArrowUpRight size={16}/></button>}
+          return <div className="destination-row" key={page.id}><span className="facebook-icon">{page.provider === 'youtube' ? <Youtube size={20}/> : <Facebook size={20}/>}</span><div className="row-main"><strong>{page.display_name}</strong><small>{page.provider === 'youtube' ? 'Channel' : 'Page ID'} {page.external_id}</small><Badge tone={ready ? 'green' : ['revoked', 'expired'].includes(page.connection_status) ? 'neutral' : 'amber'}>{label}</Badge></div></div>;
+        }) : <Empty icon={<Facebook/>} title="No destinations added" text="Connect YouTube or add a Facebook Page."/>}
+        {data.destinations.length > 3 && <button className="card-link" onClick={() => onNavigate('Clients & channels')}>View all destinations <ArrowUpRight size={16}/></button>}
       </section>
     </div>
 

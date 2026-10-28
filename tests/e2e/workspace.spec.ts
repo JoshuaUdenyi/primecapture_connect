@@ -22,7 +22,7 @@ test('local crew can create a client, Page reference and production; publishing 
   await expect(page.getByRole('heading',{name:'Dashboard'})).toBeVisible();
   await expect(page.getByText('SIMULATED WORKSPACE',{exact:true})).toBeVisible();
   await page.screenshot({path:'test-results/desktop-workspace.png',fullPage:true});
-  await page.getByRole('button',{name:'Clients & Pages',exact:true}).click();
+  await page.getByRole('button',{name:'Clients & channels',exact:true}).click();
   await page.getByRole('button',{name:'Add client',exact:true}).click();
   const dialog=page.getByRole('dialog');await dialog.getByLabel('Client name').fill('Browser rehearsal client');await dialog.getByLabel('Production notes').fill('Smoke test — no secrets');await dialog.getByRole('button',{name:'Add client',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Browser rehearsal client'})).toBeVisible();
@@ -30,7 +30,7 @@ test('local crew can create a client, Page reference and production; publishing 
   await dialog.getByLabel('Client',{exact:true}).selectOption({label:'Browser rehearsal client'});
   await dialog.getByLabel('Page display name (unverified)').fill('Rehearsal Page');await dialog.getByLabel('Numeric Page ID or Facebook Page ID URL').fill('188888888888888');await dialog.getByRole('button',{name:'Save Page reference'}).click();await expect(dialog).not.toBeVisible();
   await page.getByRole('button',{name:'Productions',exact:false}).first().click();await page.getByRole('button',{name:'New production',exact:true}).click();
-  await dialog.getByLabel('Client',{exact:true}).selectOption({label:'Browser rehearsal client'});await dialog.getByLabel('Production title').fill('Browser rehearsal');await dialog.getByLabel('Page reference (optional)').selectOption({label:'Rehearsal Page · 188888888888888'});await dialog.getByRole('button',{name:'Create production',exact:true}).click();await expect(dialog).not.toBeVisible();
+  await dialog.getByLabel('Client',{exact:true}).selectOption({label:'Browser rehearsal client'});await dialog.getByLabel('Production title').fill('Browser rehearsal');await dialog.getByLabel('Stream destination (optional)').selectOption({label:'Facebook · Rehearsal Page · 188888888888888'});await dialog.getByRole('button',{name:'Create production',exact:true}).click();await expect(dialog).not.toBeVisible();
   await page.getByRole('button').filter({hasText:'Browser rehearsal'}).click();await expect(dialog.getByRole('heading',{name:'Production preflight'})).toBeVisible();await dialog.getByRole('button',{name:'Check publishing availability'}).click();await expect(dialog.getByRole('alert')).toContainText('blocked');
   await dialog.getByRole('button',{name:'Close dialog'}).click();await page.getByRole('button',{name:'Audit log',exact:true}).click();await expect(page.getByText('production · created').first()).toBeVisible();
   await page.getByRole('button',{name:'Sign out'}).click();await expect(page).toHaveURL(/login/);
@@ -56,4 +56,42 @@ test('mobile workspace fits and safety guide is accessible',async({page})=>{
   await page.getByRole('button',{name:'Open navigation'}).click();await page.getByRole('button',{name:'Help'}).click();
   await expect(page.getByRole('dialog').getByRole('heading',{name:'Broadcast safety'})).toBeVisible();
   await page.screenshot({path:'test-results/mobile-workspace.png',fullPage:true});
+});
+test('YouTube channel selection exposes API broadcast setup and keeps simulation requests blocked', async ({page}) => {
+  await page.setViewportSize({width:1440,height:1000});
+  await page.goto('/login');await page.getByRole('button',{name:'Enter local simulation'}).click();
+  await expect(page.getByText('SIMULATED WORKSPACE',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Clients & channels',exact:true}).click();
+  await page.getByRole('button',{name:'Connect YouTube',exact:true}).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button',{name:'Create connection link'}).click();
+  await expect(dialog.getByRole('status')).toContainText('sample workspace');
+  await dialog.getByRole('button',{name:'Close dialog'}).click();
+  await page.getByRole('navigation').getByRole('button',{name:/Productions/}).click();
+  await page.getByRole('button',{name:'New production',exact:true}).click();
+  await dialog.getByLabel('Client',{exact:true}).selectOption({label:'The Gathering'});
+  await dialog.getByLabel('Production title').fill('YouTube API rehearsal');
+  await dialog.getByLabel('Stream destination (optional)').selectOption({label:'YouTube · The Gathering · YouTube · UCxxxxxxxxxxxxxxxxxxxxxx'});
+  await dialog.getByRole('button',{name:'Create production',exact:true}).click();
+  await expect(dialog).not.toBeVisible();
+  await page.getByRole('button').filter({hasText:'YouTube API rehearsal'}).click();
+  await expect(dialog.getByRole('heading',{name:'YouTube broadcast',exact:true})).toBeVisible();
+  await expect(dialog.getByLabel('Visibility',{exact:true})).toHaveValue('private');
+  await dialog.getByLabel('Is this broadcast made for children?').selectOption('no');
+  await dialog.getByRole('checkbox').check();
+  await page.screenshot({path:'test-results/youtube-broadcast.png',fullPage:true});
+  const request = page.waitForResponse(response => response.url().endsWith('/prepare') && response.request().method()==='POST');
+  await dialog.getByRole('button',{name:'Create YouTube broadcast'}).click();
+  expect((await request).status()).toBe(409);
+  await expect(dialog.getByRole('alert')).toContainText('sample workspace');
+  for (const width of [320,390]) {
+    await page.setViewportSize({width,height:844});
+    await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    expect(await dialog.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
+  }
+});
+test('expired client connection links expose no channel or workspace details', async ({page}) => {
+  await page.goto('/youtube/connect?invite=not-a-valid-invitation');
+  await expect(page.getByRole('heading',{name:'Connection link unavailable'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Continue with Google'})).toHaveCount(0);
 });

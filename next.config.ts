@@ -3,6 +3,7 @@ const config: NextConfig = {
   poweredByHeader: false,
   devIndicators: false,
   allowedDevOrigins: ['127.0.0.1'],
+  logging: { incomingRequests: { ignore: [/\/youtube\/(connect|callback)/] } },
   async headers() {
     return [{ source: '/:path*', headers: [
       { key: 'X-Content-Type-Options', value: 'nosniff' },

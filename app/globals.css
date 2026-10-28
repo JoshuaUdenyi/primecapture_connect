@@ -119,7 +119,7 @@ p { line-height: 1.7; }
 .device-summary-list strong { display: block; font-size: 15px; font-weight: 500; color: var(--secondary); }
 .device-summary-list span { display: block; font-size: 13px; color: var(--muted); margin-top: 6px; }
 
-.section-toolbar { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+.section-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 24px; }
 .section-toolbar h2 { margin-right: auto; }
 .search-box { padding: 0 12px; }
 .search-box input { width: 180px; }
@@ -296,6 +296,7 @@ textarea { resize: vertical; }
   .login-shell { padding: 36px 24px; }
 }
 @media (max-width: 380px) {
+  .page-heading { flex-wrap: wrap; align-items: flex-start; }
   .content { padding: 26px 14px; }
   .topbar { padding: 16px 14px; }
   .staff-role { display: none; }
@@ -312,3 +313,12 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+.youtube-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0; }
+.confirmation { display: flex; align-items: flex-start; gap: 12px; line-height: 1.7; margin-top: 26px; }
+.confirmation input { flex-shrink: 0; width: 20px; height: 20px; margin-top: 3px; padding: 0; accent-color: var(--accent-fill); }
+
+.youtube-channel-label { display: flex; align-items: flex-start; gap: 12px; margin: 20px 0 24px; color: var(--secondary); }
+.youtube-channel-label strong { font-size: 16px; font-weight: 500; }
+.youtube-channel-label small { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.youtube-channel-label > div { min-width: 0; }

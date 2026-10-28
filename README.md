@@ -2,11 +2,11 @@
 
 A private production workspace for PrimeCapture Media. One Next.js application, Supabase Auth/Postgres, and a small outbound-polling Node helper. Built from the supplied [PRD](docs/PRD.md).
 
-**Delivered:** Phase 0 foundations and Phase 1 dashboard, plus status-only device pairing and a tested, isolated OBS safety kernel. **Not enabled:** real Meta OAuth/publishing/business access requests, profile publishing, cloud OBS configure/start/restore. This is a deployable foundation, not an approved Facebook production integration.
+**Delivered:** Staff workspace, client Facebook/YouTube destinations, a YouTube OAuth and livestream-creation API integration, status-only device pairing and a tested, isolated OBS safety kernel. YouTube needs Google credentials, migration 002 and a private live rehearsal; see [YouTube setup](docs/youtube-setup.md). **Not enabled:** real Meta OAuth/publishing/business access requests, profile publishing, cloud OBS configure/start/restore. This is a deployable foundation, not an approved Facebook production integration.
 
 ## Interface
 
-Larger text, dark charcoal surfaces, and a spacious workspace for productions, Page access and devices. The app fills the window without an outer frame. These previews show labelled local sample data.
+Larger text, dark charcoal surfaces, and a spacious workspace for productions, channel access and devices. The app fills the window without an outer frame. These previews show labelled local sample data.
 
 ![Desktop workspace](docs/ui/desktop.png)
 
@@ -21,25 +21,31 @@ npm ci
 npm run dev:demo
 ```
 
-Open the app in your local browser and select **Enter local simulation**. No credentials are needed. The `SIMULATED WORKSPACE` banner is always visible; records are process-local sample data, reset on server restart. The simulation never grants real Page publishing access. It is prohibited under `NODE_ENV=production`.
+Open the app in your local browser and select **Enter local simulation**. No credentials are needed. The `SIMULATED WORKSPACE` banner is always visible; records are process-local sample data, reset on server restart. The simulation never calls Google/Meta or creates real broadcasts. It is prohibited under `NODE_ENV=production`.
 
-Working features: clients and numeric Page references, production drafts/preflight, administrator audit history, manual handoff guide, admin/operator authorization, pair/revoke devices and observe their OBS heartbeat. Save client and Page references before creating a production. A Page reference is not authorization. The app does not claim to send Facebook notifications.
+Working features: client YouTube authorization links, scheduled YouTube API broadcasts and status checks (when configured), clients and numeric Facebook Page references, production drafts/preflight, administrator audit history, manual handoff guide, admin/operator authorization, pair/revoke devices and observe their OBS heartbeat. Connect the client’s YouTube channel or save a Facebook Page reference before creating a production. A Page reference is not authorization. The app does not claim to send Facebook notifications.
 
 ## Supabase-backed workspace
 
-1. Create a Supabase project; apply `supabase/migrations/202610280001_initial.sql` in its SQL editor (one-time migration). The SQL requires Supabase's `auth.users`, `auth.uid()`, `anon`, `authenticated`, and `service_role`, which already exist there.
+1. Create a Supabase project; apply `supabase/migrations/202610280001_initial.sql`, then `supabase/migrations/202610280002_youtube.sql` in its SQL editor. On an existing workspace, apply only the new migration 002 once. The SQL requires Supabase's `auth.users`, `auth.uid()`, `anon`, `authenticated`, and `service_role`, which already exist there.
 2. Disable public signup in Supabase Auth. Create each staff user with **Auth → Users → Add user**; do not expose an invitation/admin key to the browser. Record the user's UUID.
 3. In the SQL editor, insert its allowlist profile, substituting actual values:
    ```sql
    insert into public.staff_profiles(user_id,email,role)
    values ('STAFF_AUTH_UUID', 'crew@your-domain.example', 'admin');
    ```
-   Email must be lowercase. Use `operator` for production crew; only admins pair/revoke devices, disconnect Pages and view audit events. Set `is_active=false` to remove workspace access. Supabase users alone are insufficient for authorization.
-4. Copy `.env.example` to `.env.local`. Set `APP_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Leave simulation/Meta flags off. Generate `TOKEN_ENCRYPTION_KEY` with a local secret manager or `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`; save privately, never commit the output. Encryption is tested but production Meta-token storage is not yet wired to a real integration.
+   Email must be lowercase. Use `operator` for production crew; only admins create client connection links, pair/revoke devices, disconnect destinations and view audit events. Set `is_active=false` to remove workspace access. Supabase users alone are insufficient for authorization.
+4. Copy `.env.example` to `.env.local`. Set `APP_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Leave simulation/Meta flags off. Generate `TOKEN_ENCRYPTION_KEY` with a local secret manager or `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`; save privately, never commit the output. This key encrypts YouTube refresh credentials; preserve it when restarting or updating the app. Real Meta-token storage remains disabled.
 5. Set Auth's Site URL to the verified origin and allowlist `<APP_BASE_URL>/auth/callback`. Configure Supabase SMTP for production delivery. Sign-in uses server-side PKCE email links with `shouldCreateUser:false`, an active staff allowlist, and a non-enumerating response. Require staff MFA through your organization's Supabase identity policy; this release does not implement an in-app MFA enrollment screen.
 6. Run `npm run dev` and sign in using the staff email. Schema failures fail closed. Browser access to credentials/device tokens is prohibited; all writes pass server role/origin checks and transactional database functions.
 
-Supabase-hosted login/email delivery has **not** been exercised here because no project/credentials were supplied. The actual SQL migration, RLS and transactional pairing are tested using embedded PostgreSQL, with a minimal Supabase Auth schema fixture.
+The SQL migrations, RLS, consent consumption and transactional pairing/creation claims are tested using embedded PostgreSQL with a minimal Supabase Auth fixture. Hosted YouTube consent and an actual video broadcast still require configured Google credentials and a private rehearsal.
+
+## YouTube livestreams
+
+Follow [the Google Cloud, Supabase and client-connection setup guide](docs/youtube-setup.md). Clients authorize their own channel through a one-use link. Staff then create and bind a scheduled livestream through the YouTube API inside PrimeCapture, with explicit visibility and audience. Stream start remains an operator action in YouTube Studio/OBS.
+
+Preview the [client connection controls](docs/ui/youtube-connect.png) and [YouTube broadcast form](docs/ui/youtube-broadcast.png). These screenshots show labelled simulation data; they are not evidence of a real Google connection.
 
 ## Sign-in button and local configuration
 
@@ -58,7 +64,7 @@ npx playwright install --with-deps chromium
 npm run test:e2e
 ```
 
-`npm test` includes encryption, input/CSRF/auth/roles, API behavior, PostgreSQL RLS/pairing/rate limits, OBS guard tests and a real WebSocket-protocol simulator using `obs-websocket-js`. It opens loopback test ports (including 4455); close any real OBS test instance first. It does **not** contact Meta, send video, stop streams or assert a real Windows OBS rehearsal passed. Test workspaces use labelled fake data only.
+`npm test` includes encryption, input/CSRF/auth/roles, API behavior, PostgreSQL RLS/pairing/rate limits, YouTube OAuth/protocol/creation safety, OBS guard tests and a real WebSocket-protocol simulator using `obs-websocket-js`. It opens loopback test ports (including 4455); close any real OBS test instance first. It does **not** contact Google/Meta, create live resources, send video, stop streams or assert a real Windows OBS rehearsal passed. Test workspaces use labelled fake data only.
 
 If Chromium is preinstalled, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable instead of downloading it. In this cloud image: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e`. Browser tests start their own labelled simulation with all real Supabase keys excluded. Close any server on port 3000 before running the suite; the tests do not reuse an existing workspace server.
 
@@ -72,7 +78,7 @@ npm run build
 npm start
 ```
 
-Deploy this root as a Next.js project on Vercel with Node 24. Configure the real Supabase variables and HTTPS `APP_BASE_URL` in Vercel's server environment. **Do not set `DEMO_MODE=true` or `MOCK_META_ENABLED=true` in production.** No secrets have a `NEXT_PUBLIC_` prefix. There are no remote fonts, browser Supabase credentials, or required external media assets. Set Vercel's production domain and Supabase redirect allowlist consistently. Apply migrations before directing staff to the deployment. `/api/health` returns only a generic status, not integration readiness.
+Deploy this root as a Next.js project on Vercel with Node 24. Configure the real Supabase variables, Google OAuth values, stable encryption key and HTTPS `APP_BASE_URL` in Vercel's server environment. **Do not set `DEMO_MODE=true` or `MOCK_META_ENABLED=true` in production.** No secrets have a `NEXT_PUBLIC_` prefix. There are no remote fonts, browser Supabase credentials, or required external media assets. Set Vercel's production domain and Supabase redirect allowlist consistently. Apply migrations before directing staff to the deployment. `/api/health` returns only a generic status, not integration readiness.
 
 The optimized build can succeed without credentials, but staff login and persistence require the configured Supabase project. Saving cloud setup instructions does not deploy to Vercel, apply migrations, or publish an environment snapshot.
 
