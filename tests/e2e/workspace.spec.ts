@@ -1,4 +1,20 @@
 import { test, expect } from '@playwright/test';
+test('sign-in remains clickable and explains missing local Supabase configuration',async({page})=>{
+  await page.goto('/login');
+  const setup=page.getByRole('region',{name:'Sign-in setup'});
+  await expect(setup).toBeVisible();
+  for(const name of ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY']) await expect(setup.getByText(name,{exact:true})).toBeVisible();
+  await setup.getByText('How to finish local setup').click();
+  await expect(setup.getByText(/Cloud environment secrets are separate/)).toBeVisible();
+  await page.getByLabel('Work email').fill('crew@example.invalid');
+  const button=page.getByRole('button',{name:'Send secure sign-in link'});
+  await expect(button).toBeEnabled();
+  const request=page.waitForResponse(response=>response.url().endsWith('/api/auth/login')&&response.request().method()==='POST');
+  await button.click();expect((await request).status()).toBe(503);
+  await expect(page.getByRole('status')).toContainText('SUPABASE_ANON_KEY');
+  await expect(page.getByRole('status')).toContainText('.env.local');
+  await expect(button).toBeEnabled();
+});
 test('local crew can create a client, Page reference and production; publishing fails closed',async({page,request})=>{
   const unauth=await request.get('/api/clients');expect(unauth.status()).toBe(401);
   await page.goto('/login');await expect(page.getByRole('heading',{name:'Welcome to the control room'})).toBeVisible();

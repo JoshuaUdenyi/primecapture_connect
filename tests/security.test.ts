@@ -4,9 +4,16 @@ import { encrypt, decrypt } from '@/lib/security/crypto';
 import { pageId, checkOrigin, body } from '@/lib/security/validation';
 import { newOAuthState, validState } from '@/lib/security/oauth-state';
 import { MockMetaProvider, GraphMetaProvider } from '@/lib/meta/provider';
-import { assertRuntimeSafety } from '@/lib/config';
+import { assertRuntimeSafety, authConfigured, missingAuthSettings } from '@/lib/config';
 import { z } from 'zod';
 afterEach(() => vi.unstubAllEnvs());
+it('recognizes missing and whitespace-only Supabase settings without returning their values',()=>{
+  vi.stubEnv('SUPABASE_URL','https://sample-project.supabase.co');
+  vi.stubEnv('SUPABASE_ANON_KEY','   ');vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY','');
+  expect(authConfigured()).toBe(false);expect(missingAuthSettings()).toEqual(['SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY']);
+  vi.stubEnv('SUPABASE_ANON_KEY','test-only-public-key');vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY','test-only-server-key');
+  expect(authConfigured()).toBe(true);expect(missingAuthSettings()).toEqual([]);
+});
 describe('secret encryption', () => {
   const key=randomBytes(32).toString('hex');
   it('authenticates ciphertext and binds it to its record', () => {

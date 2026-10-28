@@ -6,8 +6,12 @@ export function assertRuntimeSafety() {
     throw new Error('Development simulation is forbidden in production');
   }
 }
+export function missingAuthSettings() {
+  return (['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'] as const)
+    .filter(name => !process.env[name]?.trim());
+}
 export function authConfigured() {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return missingAuthSettings().length === 0;
 }
 // These gates deliberately stay closed until evidence is reviewed and an implementation ships.
 export const capabilities = { pagePublishing: false, businessRequests: false, profilePublishing: false, remoteObsControl: false } as const;

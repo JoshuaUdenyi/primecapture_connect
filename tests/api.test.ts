@@ -10,6 +10,24 @@ async function api(path:string,method='GET',value:unknown={},origin='http://loca
 beforeEach(()=>{vi.stubEnv('DEMO_MODE','true');vi.stubEnv('NODE_ENV','test');jar.clear();demo.rates.clear();});
 afterEach(()=>vi.unstubAllEnvs());
 describe('server authorization and workflow',()=>{
+ it('returns actionable setup errors without permitting login when local keys are missing',async()=>{
+   vi.stubEnv('SUPABASE_URL','https://sample-project.supabase.co');
+   vi.stubEnv('SUPABASE_ANON_KEY','');vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY','');
+   const result=await api('auth/login','POST',{email:'crew@example.invalid'});
+   expect(result.status).toBe(503);
+   const payload=await result.json();expect(payload.code).toBe('SETUP_REQUIRED');
+   expect(payload.error).toContain('SUPABASE_ANON_KEY');expect(payload.error).toContain('SUPABASE_SERVICE_ROLE_KEY');
+   expect(payload.error).toContain('.env.local');expect(payload.error).toContain('npm run dev');
+   expect((await api('me')).status).toBe(401);
+ });
+ it('keeps production setup errors generic',async()=>{
+   vi.stubEnv('NODE_ENV','production');vi.stubEnv('DEMO_MODE','false');vi.stubEnv('MOCK_META_ENABLED','false');
+   vi.stubEnv('SUPABASE_URL','');vi.stubEnv('SUPABASE_ANON_KEY','');vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY','');
+   const result=await api('auth/login','POST',{email:'crew@example.invalid'});
+   expect(result.status).toBe(503);const payload=await result.json();
+   expect(payload.code).toBe('SETUP_REQUIRED');expect(payload.error).toContain('workspace administrator');
+   expect(payload.error).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+ });
  it('returns 401 for protected routes, and blocks cross-site mutations',async()=>{
    for(const path of ['me','clients','destinations','dashboard','audit']) expect((await api(path)).status).toBe(401);
    expect((await api('auth/demo','POST',{},'https://evil.test')).status).toBe(403);

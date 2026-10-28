@@ -38,3 +38,9 @@ The SQL migration is actually executed with PGlite PostgreSQL. Tests verify anon
 - Vercel deployment: **not performed**. The user subsequently published the cloud environment; source retention in the restored instance and local startup were verified. See Git history for source publication.
 
 Development workflow is usable locally with labelled simulation. Production broadcast readiness is **not claimed**. See `meta-feasibility.md`, `operations.md` and `../agent/README.md` for the exact external steps and remaining implementation gates.
+
+## Sign-in configuration regression fix — 2026-10-28
+
+The sign-in button previously stayed disabled when any required Supabase setting was absent. It now responds after hydration and displays an actionable server setup error. Development lists missing variable names with a local `.env.local` checklist; production keeps setup errors generic. Secret values never enter page props or the browser bundle. Whitespace-only settings count as missing.
+
+Validation: `npm run check` passed (lint, generated route types/TypeScript, **29 tests** across 5 files, optimized production build); Playwright passed **3 browser tests**, including the exact missing-configuration button regression. Browser tests explicitly exclude live Supabase keys and never reuse an existing app server. A separate configured-workspace browser check clicked the real sign-in button with an unregistered test address and received the expected generic HTTP 200 response; no email was sent. This does not verify email delivery or completion of an administrator email-link login.

@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { requireStaff } from '@/lib/auth/session';
-import { assertRuntimeSafety, isDemo, authConfigured } from '@/lib/config';
+import { assertRuntimeSafety, isDemo, authConfigured, missingAuthSettings } from '@/lib/config';
 import { demo } from '@/lib/db/demo';
 import { adminDb, authClient } from '@/lib/db/server';
 import { list, get, write, revokeAgent } from '@/lib/db/repository';
@@ -33,7 +33,9 @@ export async function handle(request: Request, path: string[]) {
       return response({ ok: true });
     }
     if (method === 'POST' && route === 'auth/login') {
-      if (!authConfigured()) throw new ApiError(503, 'SETUP_REQUIRED', 'Configure Supabase to enable staff sign-in.');
+      if (!authConfigured()) throw new ApiError(503, 'SETUP_REQUIRED', process.env.NODE_ENV === 'production'
+        ? 'Staff sign-in setup is incomplete. Ask your workspace administrator to configure Supabase on this deployment.'
+        : `Set ${missingAuthSettings().join(', ')} in .env.local on the computer running this app, then restart with npm run dev. Cloud secrets do not automatically configure your local copy.`);
       const { email } = await body(request, z.object({ email: z.email().max(254) }).strict());
       // Global + per-email limits work across serverless instances via Postgres.
       await rateLimit('staff-login-global', 20); await rateLimit('staff-login:' + email.toLowerCase(), 3);

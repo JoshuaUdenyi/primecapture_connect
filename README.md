@@ -33,6 +33,12 @@ Working features: clients and numeric Page references, production drafts/preflig
 
 Supabase-hosted login/email delivery has **not** been exercised here because no project/credentials were supplied. The actual SQL migration, RLS and transactional pairing are tested using embedded PostgreSQL, with a minimal Supabase Auth schema fixture.
 
+## Sign-in button and local configuration
+
+Cloud environment secrets do not transfer to a cloned GitHub repository. For the real staff login on your computer, copy `.env.example` to `.env.local` beside `package.json` and privately fill in `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. On Windows, check that the filename is exactly `.env.local`, not `.env.local.txt`. Set `APP_BASE_URL` to the local app origin and keep the demo flags false. Stop the running server with Ctrl+C, run `npm run dev`, then reload the sign-in page.
+
+If setup is incomplete, the development sign-in page lists the missing variable names and provides a local setup checklist. The button stays available after the page loads; submitting shows the server's setup error instead of silently remaining disabled. Production shows an administrator-facing setup message without listing server configuration details. Missing settings never allow authentication or access to protected routes. The initial “Loading sign-in…” state requires JavaScript; enable it if the page never becomes interactive.
+
 ## Checks
 
 ```sh
@@ -46,7 +52,7 @@ npm run test:e2e
 
 `npm test` includes encryption, input/CSRF/auth/roles, API behavior, PostgreSQL RLS/pairing/rate limits, OBS guard tests and a real WebSocket-protocol simulator using `obs-websocket-js`. It opens loopback test ports (including 4455); close any real OBS test instance first. It does **not** contact Meta, send video, stop streams or assert a real Windows OBS rehearsal passed. Test workspaces use labelled fake data only.
 
-If Chromium is preinstalled, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable instead of downloading it. In this cloud image: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e`. Browser tests start an isolated labelled simulation when no dev server is already running. Close any unrelated server on port 3000 first.
+If Chromium is preinstalled, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to its executable instead of downloading it. In this cloud image: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e`. Browser tests start their own labelled simulation with all real Supabase keys excluded. Close any server on port 3000 before running the suite; the tests do not reuse an existing workspace server.
 
 Build/dev use Next's supported Webpack mode because this cloud's process sandbox blocks Turbopack's CSS compiler IPC socket. No TLS, integrity, or signature verification is disabled.
 
