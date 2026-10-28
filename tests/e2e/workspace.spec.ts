@@ -1,0 +1,30 @@
+import { test, expect } from '@playwright/test';
+test('local crew can create a client, Page reference and production; publishing fails closed',async({page,request})=>{
+  const unauth=await request.get('/api/clients');expect(unauth.status()).toBe(401);
+  await page.goto('/login');await expect(page.getByRole('heading',{name:'Welcome to the control room'})).toBeVisible();
+  await page.getByRole('button',{name:'Enter local simulation'}).click();
+  await expect(page.getByRole('heading',{name:'Your production, in focus.'})).toBeVisible();
+  await expect(page.getByText('SIMULATED WORKSPACE',{exact:true})).toBeVisible();
+  await page.screenshot({path:'test-results/desktop-workspace.png',fullPage:true});
+  await page.getByRole('button',{name:'Clients & Pages',exact:true}).click();
+  await page.getByRole('button',{name:'Add client',exact:true}).click();
+  const dialog=page.getByRole('dialog');await dialog.getByLabel('Client name').fill('Browser rehearsal client');await dialog.getByLabel('Production notes').fill('Smoke test — no secrets');await dialog.getByRole('button',{name:'Add client',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Browser rehearsal client'})).toBeVisible();
+  await page.getByRole('button',{name:'Add Page reference',exact:true}).click();
+  await dialog.getByLabel('Client',{exact:true}).selectOption({label:'Browser rehearsal client'});
+  await dialog.getByLabel('Page display name (unverified)').fill('Rehearsal Page');await dialog.getByLabel('Numeric Page ID or Facebook Page ID URL').fill('188888888888888');await dialog.getByRole('button',{name:'Save Page reference'}).click();await expect(dialog).not.toBeVisible();
+  await page.getByRole('button',{name:'Productions',exact:false}).first().click();await page.getByRole('button',{name:'New production',exact:true}).click();
+  await dialog.getByLabel('Client',{exact:true}).selectOption({label:'Browser rehearsal client'});await dialog.getByLabel('Production title').fill('Browser rehearsal');await dialog.getByLabel('Page reference (optional)').selectOption({label:'Rehearsal Page · 188888888888888'});await dialog.getByRole('button',{name:'Create production',exact:true}).click();await expect(dialog).not.toBeVisible();
+  await page.getByRole('button').filter({hasText:'Browser rehearsal'}).click();await expect(dialog.getByRole('heading',{name:'Production preflight'})).toBeVisible();await dialog.getByRole('button',{name:'Check publishing availability'}).click();await expect(dialog.getByRole('alert')).toContainText('blocked');
+  await dialog.getByRole('button',{name:'Close dialog'}).click();await page.getByRole('button',{name:'Audit log',exact:true}).click();await expect(page.getByText('production · created').first()).toBeVisible();
+  await page.getByRole('button',{name:'Sign out'}).click();await expect(page).toHaveURL(/login/);
+});
+test('mobile workspace fits and safety guide is accessible',async({page})=>{
+  await page.setViewportSize({width:390,height:844});await page.goto('/login');await page.getByRole('button',{name:'Enter local simulation'}).click();
+  await expect(page.getByRole('heading',{name:'Your production, in focus.'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'test-results/mobile-overview.png',fullPage:true});
+  await page.getByRole('button',{name:'Open navigation'}).click();await page.getByRole('button',{name:'Help & runbook'}).click();
+  await expect(page.getByRole('dialog').getByRole('heading',{name:'Your broadcast comes first'})).toBeVisible();
+  await page.screenshot({path:'test-results/mobile-workspace.png',fullPage:true});
+});

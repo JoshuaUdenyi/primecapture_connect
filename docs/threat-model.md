@@ -1,0 +1,14 @@
+# Security boundaries and known limits
+
+- **Staff browser → server:** Supabase verified user + active allowlist/role; exact configured-origin checks on cookie-authenticated mutations; secure HttpOnly auth cookies in production. No client-supplied role is authoritative. Local demo login selects a simulated role only outside production.
+- **Server → Postgres:** service-role is server-only. RLS enabled on every table. Browser roles cannot write; credential/device/command/state tables have no browser grants. Staff read policies and admin audit policy are covered by actual PostgreSQL tests. Record creation, pairing and revocation use transactional audited RPCs. The shared workspace is intentional, not tenant isolation.
+- **Server → Meta:** all real operations are blocked. No arbitrary external URL fetch; Page references are parsed without fetching. OAuth state generation/validation and AES-256-GCM are foundations, not an enabled callback. Actual Graph errors/scopes/retries await the feasibility spike.
+- **Cloud → helper:** high-entropy one-use short-lived pairing; hashed scoped device tokens; HTTPS polling with redirects disabled; revoke checked on each poll. Only generic heartbeat fields accepted. The response must contain no commands. No OBS password/settings/keys reach dashboard APIs.
+- **Helper → OBS:** loopback fixed endpoint and local password; status-only daemon. The isolated future controller has no stop/scene/audio/recording method and durable no-replay guards. Fake tests cannot prove a real active broadcast safety rehearsal; release remains blocked.
+- **Errors/audit:** allowlisted event identifiers and resource IDs only; arbitrary exception messages/payloads are never sent to browser APIs. Response bodies are capped and schema-validated. No full request-body logging. Disable third-party automatic payload capture/analytics before adding any.
+- **Rate limiting:** production Postgres atomic counters, not process-local counters in serverless. Local in-memory limits are explicitly demo-only. Login has global/email limits; pairing a global limit and 80-bit codes. Tune WAF/per-IP limits for the deployment and trusted proxy topology.
+- **Browser:** CSP, deny framing, no-referrer, nosniff, no camera/mic/geolocation. Server-only imports guard secrets; no secret browser storage. Pairing codes are displayed once to an authenticated admin and expire quickly.
+
+## Outstanding production controls
+
+Supabase live authentication/SMTP and staff MFA policy, real hosted migration test, real Windows OBS rehearsal, Meta app review/permission evidence, audited OAuth/publish implementation, durable command delivery and end-to-end confirmation, versioned key rotation, retention scheduling, and independent security review remain required. Do not advertise this build as production-broadcast approved.
