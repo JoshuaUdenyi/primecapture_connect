@@ -4,6 +4,14 @@ A private production workspace for PrimeCapture Media. One Next.js application, 
 
 **Delivered:** Phase 0 foundations and Phase 1 dashboard, plus status-only device pairing and a tested, isolated OBS safety kernel. **Not enabled:** real Meta OAuth/publishing/business access requests, profile publishing, cloud OBS configure/start/restore. This is a deployable foundation, not an approved Facebook production integration.
 
+## Interface
+
+Larger text, a warm peach/orange palette, and a focused workspace for productions, Page access and devices. These previews show labelled local sample data.
+
+![Desktop workspace](docs/ui/desktop.png)
+
+[View the phone layout](docs/ui/mobile.png)
+
 ## Run locally
 
 Requires Node **24 LTS** and npm (pinned dependency tree in `package-lock.json`). Use the existing checkout; cloud tasks are already isolated and do not require a Git worktree.

@@ -17,9 +17,9 @@ test('sign-in remains clickable and explains missing local Supabase configuratio
 });
 test('local crew can create a client, Page reference and production; publishing fails closed',async({page,request})=>{
   const unauth=await request.get('/api/clients');expect(unauth.status()).toBe(401);
-  await page.goto('/login');await expect(page.getByRole('heading',{name:'Welcome to the control room'})).toBeVisible();
+  await page.goto('/login');await expect(page.getByRole('heading',{name:'Sign in'})).toBeVisible();
   await page.getByRole('button',{name:'Enter local simulation'}).click();
-  await expect(page.getByRole('heading',{name:'Your production, in focus.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Dashboard'})).toBeVisible();
   await expect(page.getByText('SIMULATED WORKSPACE',{exact:true})).toBeVisible();
   await page.screenshot({path:'test-results/desktop-workspace.png',fullPage:true});
   await page.getByRole('button',{name:'Clients & Pages',exact:true}).click();
@@ -35,12 +35,25 @@ test('local crew can create a client, Page reference and production; publishing 
   await dialog.getByRole('button',{name:'Close dialog'}).click();await page.getByRole('button',{name:'Audit log',exact:true}).click();await expect(page.getByText('production · created').first()).toBeVisible();
   await page.getByRole('button',{name:'Sign out'}).click();await expect(page).toHaveURL(/login/);
 });
+test('header search finds productions and supports keyboard access', async ({page}) => {
+  await page.goto('/login');
+  await page.getByRole('button', {name:'Enter local simulation'}).click();
+  await expect(page.getByText('SIMULATED WORKSPACE', {exact:true})).toBeVisible();
+  await page.keyboard.press('/');
+  const search = page.getByRole('textbox', {name:'Search productions', exact:true});
+  await expect(search).toBeFocused();
+  await search.fill('Grace & Daniel');
+  await expect(page.getByRole('button').filter({hasText:'Grace & Daniel — Wedding ceremony'})).toBeVisible();
+  await search.fill('no-matching-production');
+  await expect(page.getByRole('heading', {name:'No productions found'})).toBeVisible();
+});
 test('mobile workspace fits and safety guide is accessible',async({page})=>{
   await page.setViewportSize({width:390,height:844});await page.goto('/login');await page.getByRole('button',{name:'Enter local simulation'}).click();
-  await expect(page.getByRole('heading',{name:'Your production, in focus.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Dashboard'})).toBeVisible();
+  await expect(page.getByText('SIMULATED WORKSPACE',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:'test-results/mobile-overview.png',fullPage:true});
-  await page.getByRole('button',{name:'Open navigation'}).click();await page.getByRole('button',{name:'Help & runbook'}).click();
-  await expect(page.getByRole('dialog').getByRole('heading',{name:'Your broadcast comes first'})).toBeVisible();
+  await page.getByRole('button',{name:'Open navigation'}).click();await page.getByRole('button',{name:'Help'}).click();
+  await expect(page.getByRole('dialog').getByRole('heading',{name:'Broadcast safety'})).toBeVisible();
   await page.screenshot({path:'test-results/mobile-workspace.png',fullPage:true});
 });
